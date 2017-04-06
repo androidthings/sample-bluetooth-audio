@@ -2,28 +2,21 @@ Android Things Bluetooth Audio sample
 =====================================
 
 This sample demonstrates the use of Android Bluetooth APIs for audio from an
-Android Things app. There are two modules:
-
-- audio-sink demonstrates how to enable an A2DP sink on your Android Things
-  device and control lifecycle events, such as pairing, connection and
-  playback so that other devices, like a phone, can connect and play audio in
-  your Android Things device.
-
-- audio-source demonstrates how to pair and connect to an existing A2DP sink,
-  so that your Android Things device can pair, connect and play audio on
-  another device, such as a Bluetooth speaker (or another Android Things
-  device running the audio-sink module).
+Android Things app. It demonstrates how to enable an A2DP sink on your
+Android Things device and control lifecycle events, such as pairing, connection
+and playback so that other devices, like a phone, can connect and play audio in
+your Android Things device.
 
 Pre-requisites
 --------------
 
 - Android Things compatible board
 - Android Studio 2.2+
-- (optional) For the audio-sink module, a speaker or headsets, so that you can
-  listen to the audio and notifications.
+- (optional) a speaker or headsets, so that you can listen to the audio and
+  notifications.
 - (optional) Two buttons connected to the GPIO pins, so that you can control the
   sample at runtime. Without the buttons, you can use a keyboard or adb. For
-  more on this, look at the activities, where the supported commands are
+  more on this, look at the main activity, where the supported commands are
   described.
 
 
@@ -34,16 +27,9 @@ On Android Studio, click on the "Run" button.
 
 If you prefer to run on the command line, type
 
-For the audio-sink sample:
 ```bash
 ./gradlew installDebug
 adb shell am start com.example.androidthings.bluetooth.audio/.A2DPSinkActivity
-```
-
-For the audio-source sample:
-```bash
-./gradlew installDebug
-adb shell am start com.example.androidthings.bluetooth.audio/.A2DPSourceActivity
 ```
 
 License
