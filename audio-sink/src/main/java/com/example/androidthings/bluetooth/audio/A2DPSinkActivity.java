@@ -38,7 +38,7 @@ import java.util.Objects;
 
 /**
  * Sample usage of the A2DP sink bluetooth profile. At startup, this activity sets the Bluetooth
- * adapter in pairing mode for {@link #DISCOVERABLE_TIMEOUT_MS} ms.
+ * adapter in pairing mode for {@link #DISCOVERABLE_TIMEOUT_S} s.
  *
  * To re-enable pairing mode, press "p" on an attached keyboard, use "adb shell input keyevent 44"
  * or press a button attached to the GPIO pin returned by {@link BoardDefaults#getGPIOForPairing()}
@@ -57,7 +57,7 @@ public class A2DPSinkActivity extends Activity {
     private static final String TAG = "A2DPSinkActivity";
 
     private static final String ADAPTER_FRIENDLY_NAME = "My Android Things device";
-    private static final int DISCOVERABLE_TIMEOUT_MS = 300;
+    private static final int DISCOVERABLE_TIMEOUT_S = 300;
     private static final int REQUEST_CODE_ENABLE_DISCOVERABLE = 100;
 
     private static final String UTTERANCE_ID =
@@ -243,14 +243,14 @@ public class A2DPSinkActivity extends Activity {
 
     /**
      * Enable the current {@link BluetoothAdapter} to be discovered (available for pairing) for
-     * the next {@link #DISCOVERABLE_TIMEOUT_MS} ms.
+     * the next {@link #DISCOVERABLE_TIMEOUT_S} s.
      */
     private void enableDiscoverable() {
         Log.d(TAG, "Registering for discovery.");
         Intent discoverableIntent =
                 new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
         discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION,
-                DISCOVERABLE_TIMEOUT_MS);
+                DISCOVERABLE_TIMEOUT_S);
         startActivityForResult(discoverableIntent, REQUEST_CODE_ENABLE_DISCOVERABLE);
     }
 
@@ -261,7 +261,7 @@ public class A2DPSinkActivity extends Activity {
             Log.d(TAG, "Enable discoverable returned with result " + resultCode);
 
             // ResultCode, as described in BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE, is either
-            // RESULT_CANCELED or the number of milliseconds that the device will stay in
+            // RESULT_CANCELED or the number of seconds that the device will stay in
             // discoverable mode. In a regular Android device, the user will see a popup requesting
             // authorization, and if they cancel, RESULT_CANCELED is returned. In Android Things,
             // on the other hand, the authorization for pairing is always given without user
@@ -273,7 +273,7 @@ public class A2DPSinkActivity extends Activity {
             }
             Log.i(TAG, "Bluetooth adapter successfully set to discoverable mode. " +
                     "Any A2DP source can find it with the name " + ADAPTER_FRIENDLY_NAME +
-                    " and pair for the next " + DISCOVERABLE_TIMEOUT_MS + " ms. " +
+                    " and pair for the next " + DISCOVERABLE_TIMEOUT_S + " s. " +
                     "Try looking for it on your phone, for example.");
 
             // There is nothing else required here, since Android framework automatically handles
@@ -281,8 +281,8 @@ public class A2DPSinkActivity extends Activity {
             // generate corresponding broadcast intents or profile proxy events that you can
             // listen to and react appropriately.
 
-            speak("Bluetooth audio sink is discoverable for " + DISCOVERABLE_TIMEOUT_MS +
-                    " milliseconds. Look for a device named " + ADAPTER_FRIENDLY_NAME);
+            speak("Bluetooth audio sink is discoverable for " + DISCOVERABLE_TIMEOUT_S +
+                    " seconds. Look for a device named " + ADAPTER_FRIENDLY_NAME);
 
         }
     }
