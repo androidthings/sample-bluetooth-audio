@@ -32,6 +32,11 @@ If you prefer to run on the command line, type
 adb shell am start com.example.androidthings.bluetooth.audio/.A2DPSinkActivity
 ```
 
+_Note_: If you connect an audio source to an Android Things audio sink (eg this
+sample) but you can't hear your media playing through the audio jack, check if
+you have an HDMI display connected. If so, the audio will be routed to the HDMI
+output.
+
 License
 -------
 
