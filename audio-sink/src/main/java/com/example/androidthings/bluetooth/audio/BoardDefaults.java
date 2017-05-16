@@ -68,7 +68,7 @@ public class BoardDefaults {
             case DEVICE_RPI3:
                 return "BCM20";
             case DEVICE_PICO:
-                return "GPIO4_IO18";
+                return "GPIO1_IO18";
             case DEVICE_VVDN:
                 return "GPIO3_IO06";
             default:
