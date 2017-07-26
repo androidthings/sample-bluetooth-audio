@@ -53,8 +53,8 @@ import java.util.Objects;
  * being worked on.
  *
  */
-public class A2DPSinkActivity extends Activity {
-    private static final String TAG = "A2DPSinkActivity";
+public class A2dpSinkActivity extends Activity {
+    private static final String TAG = "A2dpSinkActivity";
 
     private static final String ADAPTER_FRIENDLY_NAME = "My Android Things device";
     private static final int DISCOVERABLE_TIMEOUT_MS = 300;
@@ -314,7 +314,7 @@ public class A2DPSinkActivity extends Activity {
     }
 
     private void initTts() {
-        mTtsEngine = new TextToSpeech(A2DPSinkActivity.this,
+        mTtsEngine = new TextToSpeech(A2dpSinkActivity.this,
                 new TextToSpeech.OnInitListener() {
                     @Override
                     public void onInit(int status) {

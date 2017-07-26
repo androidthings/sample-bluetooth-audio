@@ -29,7 +29,7 @@ If you prefer to run on the command line, type
 
 ```bash
 ./gradlew installDebug
-adb shell am start com.example.androidthings.bluetooth.audio/.A2DPSinkActivity
+adb shell am start com.example.androidthings.bluetooth.audio/.A2dpSinkActivity
 ```
 
 _Note_: If you connect an audio source to an Android Things audio sink (eg this
