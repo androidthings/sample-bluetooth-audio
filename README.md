@@ -1,5 +1,4 @@
-Android Things Bluetooth Audio sample
-=====================================
+# Android Things Bluetooth Audio sample
 
 This sample demonstrates the use of Android Bluetooth APIs for audio from an
 Android Things app. It demonstrates how to enable an A2DP sink on your
@@ -7,8 +6,7 @@ Android Things device and control lifecycle events, such as pairing, connection
 and playback so that other devices, like a phone, can connect and play audio in
 your Android Things device.
 
-Pre-requisites
---------------
+## Pre-requisites
 
 - Android Things compatible board
 - Android Studio 2.2+
@@ -19,9 +17,7 @@ Pre-requisites
   more on this, look at the main activity, where the supported commands are
   described.
 
-
-Build and install
-=================
+## Build and install
 
 On Android Studio, click on the "Run" button.
 
@@ -37,8 +33,7 @@ sample) but you can't hear your media playing through the audio jack, check if
 you have an HDMI display connected. If so, the audio will be routed to the HDMI
 output.
 
-License
--------
+## License
 
 Copyright 2017 The Android Open Source Project, Inc.
 
