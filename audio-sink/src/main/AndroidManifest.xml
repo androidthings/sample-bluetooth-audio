@@ -29,7 +29,7 @@
 
         <uses-library android:name="com.google.android.things"/>
 
-        <activity android:name=".A2DPSinkActivity">
+        <activity android:name=".A2dpSinkActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
