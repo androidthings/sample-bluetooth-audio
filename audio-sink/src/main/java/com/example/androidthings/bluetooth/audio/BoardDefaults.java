@@ -69,13 +69,13 @@ public class BoardDefaults {
             case DEVICE_JOULE:
                 return "J6_25";
             case DEVICE_RPI3:
-                return "BCM6";
+                return "BCM20";
             case DEVICE_IMX6UL_PICO:
                 return "GPIO4_IO22";
             case DEVICE_IMX6UL_VVDN:
                 return "GPIO3_IO06";
             case DEVICE_IMX7D_PICO:
-                return "GPIO_34";
+                return "GPIO_175";
             default:
                 throw new IllegalStateException("Unknown Build.DEVICE " + Build.DEVICE);
         }
