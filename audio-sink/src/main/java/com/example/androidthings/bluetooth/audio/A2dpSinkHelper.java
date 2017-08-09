@@ -43,6 +43,11 @@ public final class A2dpSinkHelper {
     public static final int A2DP_SINK_PROFILE = 11;
 
     /**
+     * Profile number for AVRCP_CONTROLLER profile.
+     */
+    public static final int AVRCP_CONTROLLER_PROFILE = 12;
+
+    /**
      * Intent used to broadcast the change in connection state of the A2DP Sink
      * profile.
      *
