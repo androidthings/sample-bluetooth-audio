@@ -30,7 +30,6 @@ import android.util.Log;
 import android.view.KeyEvent;
 
 import com.google.android.things.bluetooth.BluetoothProfileManager;
-import com.google.android.things.bluetooth.BluetoothProfileManager.ServiceListener;
 import com.google.android.things.contrib.driver.button.Button;
 import com.google.android.things.contrib.driver.button.ButtonInputDriver;
 
@@ -74,7 +73,6 @@ public class A2dpSinkActivity extends Activity {
     private ButtonInputDriver mDisconnectAllButtonDriver;
 
     private TextToSpeech mTtsEngine;
-    private boolean mRegisteredReceivers;
 
     /**
      * Handle an intent that is broadcast by the Bluetooth adapter whenever it changes its
@@ -157,17 +155,24 @@ public class A2dpSinkActivity extends Activity {
             return;
         }
 
-        ServiceListener serviceListener = new ServiceListener() {
-            @Override
-            public void onServiceConnected(BluetoothProfileManager bluetoothProfileManager) {
-              setupBTProfiles(bluetoothProfileManager);
-            }
+        // We use Text-to-Speech to indicate status change to the user
+        initTts();
 
-            @Override
-            public void onServiceDisconnected() {
-            }
-        };
-        new BluetoothProfileManager(this, serviceListener);
+        registerReceiver(mAdapterStateChangeReceiver, new IntentFilter(
+                BluetoothAdapter.ACTION_STATE_CHANGED));
+        registerReceiver(mSinkProfileStateChangeReceiver, new IntentFilter(
+                A2dpSinkHelper.ACTION_CONNECTION_STATE_CHANGED));
+        registerReceiver(mSinkProfilePlaybackChangeReceiver, new IntentFilter(
+                A2dpSinkHelper.ACTION_PLAYING_STATE_CHANGED));
+
+        if (mBluetoothAdapter.isEnabled()) {
+            Log.d(TAG, "Bluetooth Adapter is already enabled.");
+            initA2DPSink();
+        } else {
+            Log.d(TAG, "Bluetooth adapter not enabled. Enabling.");
+            mBluetoothAdapter.enable();
+        }
+
     }
 
     @Override
@@ -197,11 +202,9 @@ public class A2dpSinkActivity extends Activity {
             if (mDisconnectAllButtonDriver != null) mDisconnectAllButtonDriver.close();
         } catch (IOException e) { /* close quietly */}
 
-        if (mRegisteredReceivers) {
-            unregisterReceiver(mAdapterStateChangeReceiver);
-            unregisterReceiver(mSinkProfileStateChangeReceiver);
-            unregisterReceiver(mSinkProfilePlaybackChangeReceiver);
-        }
+        unregisterReceiver(mAdapterStateChangeReceiver);
+        unregisterReceiver(mSinkProfileStateChangeReceiver);
+        unregisterReceiver(mSinkProfilePlaybackChangeReceiver);
 
         if (mA2DPSinkProxy != null) {
             mBluetoothAdapter.closeProfileProxy(A2dpSinkHelper.A2DP_SINK_PROFILE,
@@ -217,7 +220,8 @@ public class A2dpSinkActivity extends Activity {
         // without having to initialize it.
     }
 
-    private void setupBTProfiles(BluetoothProfileManager bluetoothProfileManager) {
+    private void setupBTProfiles() {
+        BluetoothProfileManager bluetoothProfileManager = new BluetoothProfileManager();
         List<Integer> enabledProfiles = bluetoothProfileManager.getEnabledProfiles();
         if (!enabledProfiles.contains(A2dpSinkHelper.A2DP_SINK_PROFILE)) {
             Log.d(TAG, "Enabling A2dp sink mode.");
@@ -229,28 +233,6 @@ public class A2dpSinkActivity extends Activity {
         } else {
             Log.d(TAG, "A2dp sink profile is enabled.");
         }
-        onProfilesConfigured();
-    }
-
-    private void onProfilesConfigured() {
-        // We use Text-to-Speech to indicate status change to the user
-        initTts();
-
-        registerReceiver(mAdapterStateChangeReceiver, new IntentFilter(
-            BluetoothAdapter.ACTION_STATE_CHANGED));
-        registerReceiver(mSinkProfileStateChangeReceiver, new IntentFilter(
-            A2dpSinkHelper.ACTION_CONNECTION_STATE_CHANGED));
-        registerReceiver(mSinkProfilePlaybackChangeReceiver, new IntentFilter(
-            A2dpSinkHelper.ACTION_PLAYING_STATE_CHANGED));
-        mRegisteredReceivers = true;
-
-        if (mBluetoothAdapter.isEnabled()) {
-            Log.d(TAG, "Bluetooth Adapter is already enabled.");
-            initA2DPSink();
-        } else {
-            Log.d(TAG, "Bluetooth adapter not enabled. Enabling.");
-            mBluetoothAdapter.enable();
-        }
     }
 
     /**
@@ -261,6 +243,7 @@ public class A2dpSinkActivity extends Activity {
             Log.e(TAG, "Bluetooth adapter not available or not enabled.");
             return;
         }
+        setupBTProfiles();
         Log.d(TAG, "Set up Bluetooth Adapter name and profile");
         mBluetoothAdapter.setName(ADAPTER_FRIENDLY_NAME);
         mBluetoothAdapter.getProfileProxy(this, new BluetoothProfile.ServiceListener() {
