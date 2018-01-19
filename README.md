@@ -6,6 +6,12 @@ Android Things device and control lifecycle events, such as pairing, connection
 and playback so that other devices, like a phone, can connect and play audio in
 your Android Things device.
 
+## Screenshots
+
+![Bluetooth Audio sample demo][demo-gif]
+
+[(Watch the demo on YouTube)][demo-yt]
+
 ## Pre-requisites
 
 - Android Things compatible board
@@ -51,3 +57,6 @@ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
 License for the specific language governing permissions and limitations under
 the License.
+
+[demo-yt]: https://www.youtube.com/watch?v=EDV_DaspP60&list=PLWz5rJ2EKKc-GjpNkFe9q3DhE2voJscDT&index=2
+[demo-gif]: demo1.gif
