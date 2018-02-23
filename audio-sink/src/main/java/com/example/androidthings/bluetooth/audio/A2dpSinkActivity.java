@@ -221,7 +221,7 @@ public class A2dpSinkActivity extends Activity {
     }
 
     private void setupBTProfiles() {
-        BluetoothProfileManager bluetoothProfileManager = new BluetoothProfileManager();
+        BluetoothProfileManager bluetoothProfileManager = BluetoothProfileManager.getInstance();
         List<Integer> enabledProfiles = bluetoothProfileManager.getEnabledProfiles();
         if (!enabledProfiles.contains(A2dpSinkHelper.A2DP_SINK_PROFILE)) {
             Log.d(TAG, "Enabling A2dp sink mode.");
