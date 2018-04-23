@@ -1,10 +1,13 @@
-# Android Things Bluetooth Audio sample
+# Bluetooth Audio
 
 This sample demonstrates the use of Android Bluetooth APIs for audio from an
-Android Things app. It demonstrates how to enable an A2DP sink on your
-Android Things device and control lifecycle events, such as pairing, connection
-and playback so that other devices, like a phone, can connect and play audio in
-your Android Things device.
+Android Things app.
+
+## Introduction
+
+This sample demonstrates how to enable an A2DP sink on your Android Things device
+and control lifecycle events, such as pairing, connection and playback so that
+other devices, like a phone, can connect and play audio in your Android Things device.
 
 ## Screenshots
 
