@@ -15,13 +15,15 @@
  */
 
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
     defaultConfig {
         applicationId "com.example.androidthings.bluetooth.audio"
         minSdkVersion 27
-        targetSdkVersion 27
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
     }
@@ -36,4 +38,8 @@ android {
 dependencies {
     compileOnly 'com.google.android.things:androidthings:1.0'
     implementation 'com.google.android.things.contrib:driver-button:1.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+}
+repositories {
+    mavenCentral()
 }
