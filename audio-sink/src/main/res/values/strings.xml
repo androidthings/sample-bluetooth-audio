@@ -16,4 +16,6 @@
   -->
 <resources>
     <string name="app_name">Android Things Bluetooth Audio app</string>
+    <string name="action_pair">Pair</string>
+    <string name="action_disconnect">Disconnect</string>
 </resources>

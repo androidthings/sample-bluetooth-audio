@@ -11,12 +11,9 @@ import android.content.IntentFilter
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.util.Log
-import android.view.KeyEvent
-import com.example.androidthings.bluetooth.audio.BoardDefaults
+import android.widget.Button
+import com.example.androidthings.bluetooth.audio.R
 import com.google.android.things.bluetooth.BluetoothProfileManager
-import com.google.android.things.contrib.driver.button.Button
-import com.google.android.things.contrib.driver.button.ButtonInputDriver
-import java.io.IOException
 import java.util.Objects
 import java.util.Locale
 
@@ -25,8 +22,8 @@ class A2dpSinkActivity : Activity() {
     private var bluetoothAdapter: BluetoothAdapter? = null
     private var a2DPSinkProxy: BluetoothProfile? = null
 
-    private var pairingButtonDriver: ButtonInputDriver? = null
-    private var disconnectAllButtonDriver: ButtonInputDriver? = null
+    private lateinit var btnPair: Button
+    private lateinit var btnDisconnect: Button
 
     private var ttsEngine: TextToSpeech? = null
 
@@ -103,6 +100,10 @@ class A2dpSinkActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_a2dpsink)
+
+        btnPair = findViewById(R.id.btnPair)
+        btnDisconnect = findViewById(R.id.btnDisconnect)
 
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (bluetoothAdapter == null) {
@@ -132,35 +133,9 @@ class A2dpSinkActivity : Activity() {
 
     }
 
-    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
-        when (keyCode) {
-            KeyEvent.KEYCODE_P -> {
-                // Enable Pairing mode (discoverable)
-                enableDiscoverable()
-                return true
-            }
-            KeyEvent.KEYCODE_D -> {
-                // Disconnect any currently connected devices
-                disconnectConnectedDevices()
-                return true
-            }
-        }
-        return super.onKeyUp(keyCode, event)
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "onDestroy")
-
-        try {
-            pairingButtonDriver?.close()
-        } catch (e: IOException) { /* close quietly */
-        }
-
-        try {
-            disconnectAllButtonDriver?.close()
-        } catch (e: IOException) { /* close quietly */
-        }
 
         unregisterReceiver(adapterStateChangeReceiver)
         unregisterReceiver(sinkProfileStateChangeReceiver)
@@ -229,7 +204,7 @@ class A2dpSinkActivity : Activity() {
         startActivityForResult(discoverableIntent, REQUEST_CODE_ENABLE_DISCOVERABLE)
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_ENABLE_DISCOVERABLE) {
             Log.d(TAG, "Enable discoverable returned with result $resultCode")
@@ -273,19 +248,14 @@ class A2dpSinkActivity : Activity() {
     }
 
     private fun configureButton() {
-        try {
-            pairingButtonDriver = ButtonInputDriver(BoardDefaults.getGPIOForPairing(),
-                    Button.LogicState.PRESSED_WHEN_LOW, KeyEvent.KEYCODE_P)
-            pairingButtonDriver!!.register()
-            disconnectAllButtonDriver = ButtonInputDriver(
-                    BoardDefaults.getGPIOForDisconnectAllBTDevices(),
-                    Button.LogicState.PRESSED_WHEN_LOW, KeyEvent.KEYCODE_D)
-            disconnectAllButtonDriver!!.register()
-        } catch (e: IOException) {
-            Log.w(TAG, "Could not register GPIO button drivers. Use keyboard events to trigger" +
-                    " the functions instead", e)
+        btnPair.setOnClickListener {
+            // Enable Pairing mode (discoverable)
+            enableDiscoverable()
         }
-
+        btnDisconnect.setOnClickListener {
+            // Disconnect any currently connected devices
+            disconnectConnectedDevices()
+        }
     }
 
     private fun initTts() {
