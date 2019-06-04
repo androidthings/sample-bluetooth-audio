@@ -1,7 +1,0 @@
-status:       PUBLISHED
-technologies: [Android, Android Things]
-categories:   [Android Things]
-languages:    [Java]
-solutions:    [IoT]
-github:       androidthings/sample-bluetooth-audio
-license:      apache2

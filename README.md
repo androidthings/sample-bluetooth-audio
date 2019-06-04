@@ -1,30 +1,19 @@
-# Bluetooth Audio
+# bluetoothingspeaker
 
-This sample demonstrates the use of Android Bluetooth APIs for audio from an
-Android Things app.
+Use an Android Things device to transform any speaker in a bluetooth speaker.
 
 ## Introduction
 
-This sample demonstrates how to enable an A2DP sink on your Android Things device
-and control lifecycle events, such as pairing, connection and playback so that
-other devices, like a phone, can connect and play audio in your Android Things device.
-
-## Screenshots
-
-![Bluetooth Audio sample demo][demo-gif]
-
-[(Watch the demo on YouTube)][demo-yt]
+This Android Things app makes use of Bluetooth Android APIs to allow devices like phones or
+ computers to connect and play audio in your Android Things device.
 
 ## Pre-requisites
 
 - Android Things compatible board
-- Android Studio 2.2+
-- (optional) a speaker or headsets, so that you can listen to the audio and
-  notifications.
-- (optional) Two buttons connected to the GPIO pins, so that you can control the
-  sample at runtime. Without the buttons, you can use a keyboard or adb. For
-  more on this, look at the main activity, where the supported commands are
-  described.
+- Android Studio 3.4+
+- A speaker or headsets, so that you can listen to the audio and notifications.
+- A touch screen connected to the Android Things device so that you can control the
+  sample at runtime. Without the buttons, you can use adb.
 
 ## Build and install
 
@@ -34,7 +23,7 @@ If you prefer to run on the command line, type
 
 ```bash
 ./gradlew installDebug
-adb shell am start com.example.androidthings.bluetooth.audio/.A2dpSinkActivity
+adb shell am start io.github.rosariopfernandes.bluetoothingspeaker/.A2dpSinkActivity
 ```
 
 _Note_: If you connect an audio source to an Android Things audio sink (eg this
@@ -42,27 +31,10 @@ sample) but you can't hear your media playing through the audio jack, check if
 you have an HDMI display connected. If so, the audio will be routed to the HDMI
 output.
 
-## Enable auto-launch behavior
-
-This sample app is currently configured to launch only when deployed from your
-development machine. To enable the main activity to launch automatically on boot,
-add the following `intent-filter` to the app's manifest file:
-
-```xml
-<activity ...>
-
-    <intent-filter>
-        <action android:name="android.intent.action.MAIN"/>
-        <category android:name="android.intent.category.HOME"/>
-        <category android:name="android.intent.category.DEFAULT"/>
-    </intent-filter>
-
-</activity>
-```
-
 ## License
 
 Copyright 2017 The Android Open Source Project, Inc.
+Copyright 2019 Rosário Pereira Fernandes
 
 Licensed to the Apache Software Foundation (ASF) under one or more contributor
 license agreements.  See the NOTICE file distributed with this work for
