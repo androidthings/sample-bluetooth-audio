@@ -17,17 +17,18 @@ import com.google.android.things.bluetooth.BluetoothProfileManager
 import com.google.android.things.contrib.driver.button.Button
 import com.google.android.things.contrib.driver.button.ButtonInputDriver
 import java.io.IOException
-import java.util.*
+import java.util.Objects
+import java.util.Locale
 
 class A2dpSinkActivity : Activity() {
 
-    private var mBluetoothAdapter: BluetoothAdapter? = null
-    private var mA2DPSinkProxy: BluetoothProfile? = null
+    private var bluetoothAdapter: BluetoothAdapter? = null
+    private var a2DPSinkProxy: BluetoothProfile? = null
 
-    private var mPairingButtonDriver: ButtonInputDriver? = null
-    private var mDisconnectAllButtonDriver: ButtonInputDriver? = null
+    private var pairingButtonDriver: ButtonInputDriver? = null
+    private var disconnectAllButtonDriver: ButtonInputDriver? = null
 
-    private var mTtsEngine: TextToSpeech? = null
+    private var ttsEngine: TextToSpeech? = null
 
     /**
      * Handle an intent that is broadcast by the Bluetooth adapter whenever it changes its
@@ -35,7 +36,7 @@ class A2dpSinkActivity : Activity() {
      * Action is [BluetoothAdapter.ACTION_STATE_CHANGED] and extras describe the old
      * and the new states. You can use this intent to indicate that the device is ready to go.
      */
-    private val mAdapterStateChangeReceiver = object : BroadcastReceiver() {
+    private val adapterStateChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val oldState = intent.getPreviousAdapterState()
             val newState = intent.getCurrentAdapterState()
@@ -50,11 +51,11 @@ class A2dpSinkActivity : Activity() {
     /**
      * Handle an intent that is broadcast by the Bluetooth A2DP sink profile whenever a device
      * connects or disconnects to it.
-     * Action is [A2dpSinkHelper.ACTION_CONNECTION_STATE_CHANGED] and
+     * Action is [ACTION_CONNECTION_STATE_CHANGED] and
      * extras describe the old and the new connection states. You can use it to indicate that
      * there's a device connected.
      */
-    private val mSinkProfileStateChangeReceiver = object : BroadcastReceiver() {
+    private val sinkProfileStateChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == ACTION_CONNECTION_STATE_CHANGED) {
                 val oldState = intent.getPreviousProfileState()
@@ -77,11 +78,11 @@ class A2dpSinkActivity : Activity() {
     /**
      * Handle an intent that is broadcast by the Bluetooth A2DP sink profile whenever a device
      * starts or stops playing through the A2DP sink.
-     * Action is [A2dpSinkHelper.ACTION_PLAYING_STATE_CHANGED] and
+     * Action is [ACTION_PLAYING_STATE_CHANGED] and
      * extras describe the old and the new playback states. You can use it to indicate that
      * there's something playing. You don't need to handle the stream playback by yourself.
      */
-    private val mSinkProfilePlaybackChangeReceiver = object : BroadcastReceiver() {
+    private val sinkProfilePlaybackChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == ACTION_PLAYING_STATE_CHANGED) {
                 val oldState = intent.getPreviousProfileState()
@@ -103,8 +104,8 @@ class A2dpSinkActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-        if (mBluetoothAdapter == null) {
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+        if (bluetoothAdapter == null) {
             Log.w(TAG, "No default Bluetooth adapter. Device likely does not support bluetooth.")
             return
         }
@@ -112,14 +113,14 @@ class A2dpSinkActivity : Activity() {
         // We use Text-to-Speech to indicate status change to the user
         initTts()
 
-        registerReceiver(mAdapterStateChangeReceiver, IntentFilter(
+        registerReceiver(adapterStateChangeReceiver, IntentFilter(
                 BluetoothAdapter.ACTION_STATE_CHANGED))
-        registerReceiver(mSinkProfileStateChangeReceiver, IntentFilter(
+        registerReceiver(sinkProfileStateChangeReceiver, IntentFilter(
                 ACTION_CONNECTION_STATE_CHANGED))
-        registerReceiver(mSinkProfilePlaybackChangeReceiver, IntentFilter(
+        registerReceiver(sinkProfilePlaybackChangeReceiver, IntentFilter(
                 ACTION_PLAYING_STATE_CHANGED))
 
-        mBluetoothAdapter?.let {
+        bluetoothAdapter?.let {
             if (it.isEnabled) {
                 Log.d(TAG, "Bluetooth Adapter is already enabled.")
                 initA2DPSink()
@@ -152,28 +153,24 @@ class A2dpSinkActivity : Activity() {
         Log.d(TAG, "onDestroy")
 
         try {
-            mPairingButtonDriver?.let {
-                it.close()
-            }
+            pairingButtonDriver?.close()
         } catch (e: IOException) { /* close quietly */
         }
 
         try {
-            mDisconnectAllButtonDriver?.let {
-                it.close()
-            }
+            disconnectAllButtonDriver?.close()
         } catch (e: IOException) { /* close quietly */
         }
 
-        unregisterReceiver(mAdapterStateChangeReceiver)
-        unregisterReceiver(mSinkProfileStateChangeReceiver)
-        unregisterReceiver(mSinkProfilePlaybackChangeReceiver)
+        unregisterReceiver(adapterStateChangeReceiver)
+        unregisterReceiver(sinkProfileStateChangeReceiver)
+        unregisterReceiver(sinkProfilePlaybackChangeReceiver)
 
-        mA2DPSinkProxy?.let {
-            mBluetoothAdapter!!.closeProfileProxy(A2DP_SINK_PROFILE, mA2DPSinkProxy)
+        a2DPSinkProxy?.let {
+            bluetoothAdapter!!.closeProfileProxy(A2DP_SINK_PROFILE, a2DPSinkProxy)
         }
 
-        mTtsEngine?.let {
+        ttsEngine?.let {
             it.stop()
             it.shutdown()
         }
@@ -199,16 +196,16 @@ class A2dpSinkActivity : Activity() {
      * Initiate the A2DP sink.
      */
     private fun initA2DPSink() {
-        if (mBluetoothAdapter == null || !mBluetoothAdapter!!.isEnabled) {
+        if (bluetoothAdapter == null || !bluetoothAdapter!!.isEnabled) {
             Log.e(TAG, "Bluetooth adapter not available or not enabled.")
             return
         }
         setupBTProfiles()
         Log.d(TAG, "Set up Bluetooth Adapter name and profile")
-        mBluetoothAdapter!!.name = ADAPTER_FRIENDLY_NAME
-        mBluetoothAdapter!!.getProfileProxy(this, object : BluetoothProfile.ServiceListener {
+        bluetoothAdapter!!.name = ADAPTER_FRIENDLY_NAME
+        bluetoothAdapter!!.getProfileProxy(this, object : BluetoothProfile.ServiceListener {
             override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
-                mA2DPSinkProxy = proxy
+                a2DPSinkProxy = proxy
                 enableDiscoverable()
             }
 
@@ -265,25 +262,25 @@ class A2dpSinkActivity : Activity() {
     }
 
     private fun disconnectConnectedDevices() {
-        if (mA2DPSinkProxy == null || mBluetoothAdapter == null || !mBluetoothAdapter!!.isEnabled) {
+        if (a2DPSinkProxy == null || bluetoothAdapter == null || !bluetoothAdapter!!.isEnabled) {
             return
         }
         speak("Disconnecting devices")
-        for (device in mA2DPSinkProxy!!.connectedDevices) {
+        for (device in a2DPSinkProxy!!.connectedDevices) {
             Log.i(TAG, "Disconnecting device $device")
-            device.disconnect(mA2DPSinkProxy!!)
+            device.disconnect(a2DPSinkProxy!!)
         }
     }
 
     private fun configureButton() {
         try {
-            mPairingButtonDriver = ButtonInputDriver(BoardDefaults.getGPIOForPairing(),
+            pairingButtonDriver = ButtonInputDriver(BoardDefaults.getGPIOForPairing(),
                     Button.LogicState.PRESSED_WHEN_LOW, KeyEvent.KEYCODE_P)
-            mPairingButtonDriver!!.register()
-            mDisconnectAllButtonDriver = ButtonInputDriver(
+            pairingButtonDriver!!.register()
+            disconnectAllButtonDriver = ButtonInputDriver(
                     BoardDefaults.getGPIOForDisconnectAllBTDevices(),
                     Button.LogicState.PRESSED_WHEN_LOW, KeyEvent.KEYCODE_D)
-            mDisconnectAllButtonDriver!!.register()
+            disconnectAllButtonDriver!!.register()
         } catch (e: IOException) {
             Log.w(TAG, "Could not register GPIO button drivers. Use keyboard events to trigger" +
                     " the functions instead", e)
@@ -292,14 +289,14 @@ class A2dpSinkActivity : Activity() {
     }
 
     private fun initTts() {
-        mTtsEngine = TextToSpeech(this@A2dpSinkActivity,
+        ttsEngine = TextToSpeech(this@A2dpSinkActivity,
                 TextToSpeech.OnInitListener { status ->
                     if (status == TextToSpeech.SUCCESS) {
-                        mTtsEngine!!.language = Locale.US
+                        ttsEngine!!.language = Locale.US
                     } else {
                         Log.w(TAG, "Could not open TTS Engine (onInit status=$status" +
                                 "). Ignoring text to speech")
-                        mTtsEngine = null
+                        ttsEngine = null
                     }
                 })
     }
@@ -307,9 +304,7 @@ class A2dpSinkActivity : Activity() {
 
     private fun speak(utterance: String) {
         Log.i(TAG, utterance)
-        mTtsEngine?.let {
-            it.speak(utterance, TextToSpeech.QUEUE_ADD, null, UTTERANCE_ID)
-        }
+        ttsEngine?.speak(utterance, TextToSpeech.QUEUE_ADD, null, UTTERANCE_ID)
     }
 
     companion object {
@@ -353,7 +348,8 @@ class A2dpSinkActivity : Activity() {
          * Requires [android.Manifest.permission.BLUETOOTH] permission to
          * receive.
          */
-        private const val ACTION_CONNECTION_STATE_CHANGED = "android.bluetooth.a2dp-sink.profile.action.CONNECTION_STATE_CHANGED"
+        private const val ACTION_CONNECTION_STATE_CHANGED =
+                "android.bluetooth.a2dp-sink.profile.action.CONNECTION_STATE_CHANGED"
 
         /**
          * Intent used to broadcast the change in the Playing state of the A2DP Sink
