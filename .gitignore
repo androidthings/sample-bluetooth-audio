@@ -43,3 +43,4 @@ captures/
 .externalNativeBuild
 
 .DS_Store
+audio-sink/google-services.json
