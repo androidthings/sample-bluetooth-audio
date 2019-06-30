@@ -36,6 +36,8 @@ output.
 Copyright 2017 The Android Open Source Project, Inc.
 Copyright 2019 Rosário Pereira Fernandes
 
+Copyright 2019 Rosário Pereira Fernandes
+
 Licensed to the Apache Software Foundation (ASF) under one or more contributor
 license agreements.  See the NOTICE file distributed with this work for
 additional information regarding copyright ownership.  The ASF licenses this

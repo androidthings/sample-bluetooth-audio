@@ -23,10 +23,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.media.AudioManager
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.widget.Button
+import android.widget.TextView
 import com.example.androidthings.bluetooth.audio.R
 import com.google.android.things.bluetooth.BluetoothProfileManager
 import java.util.Objects
@@ -39,6 +41,7 @@ class A2dpSinkActivity : Activity() {
 
     private lateinit var btnPair: Button
     private lateinit var btnDisconnect: Button
+    private lateinit var tvInformation: TextView
 
     private var ttsEngine: TextToSpeech? = null
 
@@ -52,9 +55,9 @@ class A2dpSinkActivity : Activity() {
         override fun onReceive(context: Context, intent: Intent) {
             val oldState = intent.getPreviousAdapterState()
             val newState = intent.getCurrentAdapterState()
-            Log.d(TAG, "Bluetooth Adapter changing state from $oldState to $newState")
+            display("Bluetooth Adapter changing state from $oldState to $newState")
             if (newState == BluetoothAdapter.STATE_ON) {
-                Log.i(TAG, "Bluetooth Adapter is ready")
+                display("Bluetooth Adapter is ready")
                 initA2DPSink()
             }
         }
@@ -73,7 +76,7 @@ class A2dpSinkActivity : Activity() {
                 val oldState = intent.getPreviousProfileState()
                 val newState = intent.getCurrentProfileState()
                 val device = intent.getDevice()
-                Log.d(TAG, "Bluetooth A2DP sink changing connection state from $oldState" +
+                display("Bluetooth A2DP sink changing connection state from $oldState" +
                         " to $newState device $device")
                 device?.let {
                     val deviceName = Objects.toString(device.name, "a device")
@@ -100,13 +103,13 @@ class A2dpSinkActivity : Activity() {
                 val oldState = intent.getPreviousProfileState()
                 val newState = intent.getCurrentProfileState()
                 val device = intent.getDevice()
-                Log.d(TAG, "Bluetooth A2DP sink changing playback state from $oldState" +
+                display("Bluetooth A2DP sink changing playback state from $oldState" +
                         " to $newState device $device" )
                 if (device != null) {
                     if (newState == STATE_PLAYING) {
-                        Log.i(TAG, "Playing audio from device ${device.address}")
+                        display("Playing audio from device ${device.address}")
                     } else if (newState == STATE_NOT_PLAYING) {
-                        Log.i(TAG, "Stopped playing audio from ${device.address}")
+                        display("Stopped playing audio from ${device.address}")
                     }
                 }
             }
@@ -119,10 +122,36 @@ class A2dpSinkActivity : Activity() {
 
         btnPair = findViewById(R.id.btnPair)
         btnDisconnect = findViewById(R.id.btnDisconnect)
+      
+        tvInformation = findViewById(R.id.tvInformation)
+
+        val manager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+        var volume: Int
+        val maxVolume = manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+
+        val slider = findViewById<SeekArc>(R.id.sbVolume)
+
+        slider.setOnSeekArcChangeListener(object : SeekArc.OnSeekArcChangeListener {
+            override fun onProgressChanged(seekArc: SeekArc?, progress: Int, fromUser: Boolean) {
+                // tvInformation.text = "Progress: $progress"
+                manager.setStreamVolume(AudioManager.STREAM_MUSIC, progress, 0)
+                volume = manager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                display(getString(R.string.current_volume, volume, maxVolume))
+            }
+
+            override fun onStartTrackingTouch(seekArc: SeekArc?) {
+
+            }
+
+            override fun onStopTrackingTouch(seekArc: SeekArc?) {
+
+            }
+        })
 
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (bluetoothAdapter == null) {
-            Log.w(TAG, "No default Bluetooth adapter. Device likely does not support bluetooth.")
+            display("No default Bluetooth adapter. Device likely does not support bluetooth.")
             return
         }
 
@@ -138,10 +167,10 @@ class A2dpSinkActivity : Activity() {
 
         bluetoothAdapter?.let {
             if (it.isEnabled) {
-                Log.d(TAG, "Bluetooth Adapter is already enabled.")
+                display("Bluetooth Adapter is already enabled.")
                 initA2DPSink()
             } else {
-                Log.d(TAG, "Bluetooth adapter not enabled. Enabling.")
+                display("Bluetooth adapter not enabled. Enabling.")
                 it.enable()
             }
         }
@@ -150,7 +179,7 @@ class A2dpSinkActivity : Activity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(TAG, "onDestroy")
+        display("onDestroy")
 
         unregisterReceiver(adapterStateChangeReceiver)
         unregisterReceiver(sinkProfileStateChangeReceiver)
@@ -173,12 +202,12 @@ class A2dpSinkActivity : Activity() {
         val bluetoothProfileManager = BluetoothProfileManager.getInstance()
         val enabledProfiles = bluetoothProfileManager.enabledProfiles
         if (!enabledProfiles.contains(A2DP_SINK_PROFILE)) {
-            Log.d(TAG, "Enabling A2dp sink mode.")
+            display("Enabling A2dp sink mode.")
             val toDisable = listOf(BluetoothProfile.A2DP)
             val toEnable = listOf(A2DP_SINK_PROFILE, AVRCP_CONTROLLER_PROFILE)
             bluetoothProfileManager.enableAndDisableProfiles(toEnable, toDisable)
         } else {
-            Log.d(TAG, "A2dp sink profile is enabled.")
+            display("A2dp sink profile is enabled.")
         }
     }
 
@@ -187,11 +216,11 @@ class A2dpSinkActivity : Activity() {
      */
     private fun initA2DPSink() {
         if (bluetoothAdapter == null || !bluetoothAdapter!!.isEnabled) {
-            Log.e(TAG, "Bluetooth adapter not available or not enabled.")
+            display("Bluetooth adapter not available or not enabled.")
             return
         }
         setupBTProfiles()
-        Log.d(TAG, "Set up Bluetooth Adapter name and profile")
+        display("Set up Bluetooth Adapter name and profile")
         bluetoothAdapter!!.name = ADAPTER_FRIENDLY_NAME
         bluetoothAdapter!!.getProfileProxy(this, object : BluetoothProfile.ServiceListener {
             override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
@@ -212,7 +241,7 @@ class A2dpSinkActivity : Activity() {
      * the next [.DISCOVERABLE_TIMEOUT_MS] ms.
      */
     private fun enableDiscoverable() {
-        Log.d(TAG, "Registering for discovery.")
+        display("Registering for discovery.")
         val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
             putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, DISCOVERABLE_TIMEOUT_MS)
         }
@@ -222,6 +251,7 @@ class A2dpSinkActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_ENABLE_DISCOVERABLE) {
+            display("Enable discoverable returned with result $resultCode")
             Log.d(TAG, "Enable discoverable returned with result $resultCode")
 
             // ResultCode, as described in BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE, is either
@@ -231,11 +261,11 @@ class A2dpSinkActivity : Activity() {
             // on the other hand, the authorization for pairing is always given without user
             // interference, so RESULT_CANCELED should never be returned.
             if (resultCode == RESULT_CANCELED) {
-                Log.e(TAG, "Enable discoverable has been cancelled by the user. " +
+                display("Enable discoverable has been cancelled by the user. " +
                         "This should never happen in an Android Things device.")
                 return
             }
-            Log.i(TAG, "Bluetooth adapter successfully set to discoverable mode. " +
+            display("Bluetooth adapter successfully set to discoverable mode. " +
                     "Any A2DP source can find it with the name $ADAPTER_FRIENDLY_NAME"  +
                     " and pair for the next $DISCOVERABLE_TIMEOUT_MS ms. " +
                     "Try looking for it on your phone, for example.")
@@ -257,7 +287,7 @@ class A2dpSinkActivity : Activity() {
         }
         speak("Disconnecting devices")
         for (device in a2DPSinkProxy!!.connectedDevices) {
-            Log.i(TAG, "Disconnecting device $device")
+            display("Disconnecting device $device")
             device.disconnect(a2DPSinkProxy!!)
         }
     }
@@ -279,7 +309,7 @@ class A2dpSinkActivity : Activity() {
                     if (status == TextToSpeech.SUCCESS) {
                         ttsEngine!!.language = Locale.US
                     } else {
-                        Log.w(TAG, "Could not open TTS Engine (onInit status=$status" +
+                        display("Could not open TTS Engine (onInit status=$status" +
                                 "). Ignoring text to speech")
                         ttsEngine = null
                     }
@@ -288,10 +318,14 @@ class A2dpSinkActivity : Activity() {
 
 
     private fun speak(utterance: String) {
-        Log.i(TAG, utterance)
+        display(utterance)
         ttsEngine?.speak(utterance, TextToSpeech.QUEUE_ADD, null, UTTERANCE_ID)
     }
 
+    private fun display(text: String) {
+        tvInformation.text = text
+        Log.d(TAG, text)
+    }
     companion object {
         private const val TAG = "A2dpSinkActivity"
 
