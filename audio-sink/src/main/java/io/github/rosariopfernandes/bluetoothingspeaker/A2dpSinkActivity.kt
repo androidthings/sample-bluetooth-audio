@@ -25,12 +25,15 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
 import android.os.Bundle
+import android.provider.Settings
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import com.example.androidthings.bluetooth.audio.R
 import com.google.android.things.bluetooth.BluetoothProfileManager
+import com.google.firebase.firestore.FirebaseFirestore
+import io.github.rosariopfernandes.bluetoothingspeaker.remotecontrol.Device
 import java.util.Objects
 import java.util.Locale
 
@@ -42,8 +45,10 @@ class A2dpSinkActivity : Activity() {
     private lateinit var btnPair: Button
     private lateinit var btnDisconnect: Button
     private lateinit var tvInformation: TextView
+    private lateinit var slider: SeekArc
 
     private var ttsEngine: TextToSpeech? = null
+    private var manager: AudioManager? = null
 
     /**
      * Handle an intent that is broadcast by the Bluetooth adapter whenever it changes its
@@ -125,19 +130,13 @@ class A2dpSinkActivity : Activity() {
       
         tvInformation = findViewById(R.id.tvInformation)
 
-        val manager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        manager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
-        var volume: Int
-        val maxVolume = manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-
-        val slider = findViewById<SeekArc>(R.id.sbVolume)
+        slider = findViewById(R.id.sbVolume)
 
         slider.setOnSeekArcChangeListener(object : SeekArc.OnSeekArcChangeListener {
-            override fun onProgressChanged(seekArc: SeekArc?, progress: Int, fromUser: Boolean) {
-                // tvInformation.text = "Progress: $progress"
-                manager.setStreamVolume(AudioManager.STREAM_MUSIC, progress, 0)
-                volume = manager.getStreamVolume(AudioManager.STREAM_MUSIC)
-                display(getString(R.string.current_volume, volume, maxVolume))
+            override fun onProgressChanged(seekArc: SeekArc?, volume: Int, fromUser: Boolean) {
+                setVolume(volume)
             }
 
             override fun onStartTrackingTouch(seekArc: SeekArc?) {
@@ -174,6 +173,25 @@ class A2dpSinkActivity : Activity() {
                 it.enable()
             }
         }
+
+        val device_id = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+
+        val firestore = FirebaseFirestore.getInstance()
+        val deviceRef = firestore.collection("devices").document(device_id)
+        deviceRef.addSnapshotListener { snapshot, e ->
+                    if (e != null) {
+                        display("Failed to fetch data from the Cloud.")
+                        return@addSnapshotListener
+                    }
+
+                    if (snapshot != null && snapshot.exists()) {
+                        val device = snapshot.toObject(Device::class.java)
+                        device?.let {
+                            val settings = it.settings
+                            slider.progress = settings.current_volume
+                        }
+                    }
+                }
 
     }
 
@@ -326,6 +344,13 @@ class A2dpSinkActivity : Activity() {
         tvInformation.text = text
         Log.d(TAG, text)
     }
+
+    private fun setVolume(volume: Int) {
+        manager?.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0)
+        val maxVolume = manager?.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        display(getString(R.string.current_volume, volume, maxVolume))
+    }
+
     companion object {
         private const val TAG = "A2dpSinkActivity"
 
