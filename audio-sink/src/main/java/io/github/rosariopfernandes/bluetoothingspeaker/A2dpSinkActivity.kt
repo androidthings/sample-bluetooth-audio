@@ -47,8 +47,9 @@ class A2dpSinkActivity : Activity() {
     private lateinit var tvInformation: TextView
     private lateinit var slider: SeekArc
 
-    private var ttsEngine: TextToSpeech? = null
+    private var textToSpeech: TextToSpeech? = null
     private var manager: AudioManager? = null
+    private var deviceName: String = Device().friendly_name
 
     /**
      * Handle an intent that is broadcast by the Bluetooth adapter whenever it changes its
@@ -125,17 +126,25 @@ class A2dpSinkActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_a2dpsink)
 
+        // Load the UI
         btnPair = findViewById(R.id.btnPair)
         btnDisconnect = findViewById(R.id.btnDisconnect)
-      
         tvInformation = findViewById(R.id.tvInformation)
-
-        manager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-
         slider = findViewById(R.id.sbVolume)
 
+        // Firestore
+        val firestore = FirebaseFirestore.getInstance()
+        val deviceId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+        val deviceRef = firestore.collection("devices").document(deviceId)
+
+        // Volume Control
         slider.setOnSeekArcChangeListener(object : SeekArc.OnSeekArcChangeListener {
             override fun onProgressChanged(seekArc: SeekArc?, volume: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    // TODO: Consider using the Realtime Database instead
+                    // Because of the number of update operations performed here
+                    deviceRef.update("settings.current_volume", volume)
+                }
                 setVolume(volume)
             }
 
@@ -148,50 +157,56 @@ class A2dpSinkActivity : Activity() {
             }
         })
 
+
+        // We use Text-to-Speech to indicate status change to the user
+        initializeTextToSpeech()
+
+        // Load Audio Service
+        manager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+        // Find Device's Bluetooth Adapter
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (bluetoothAdapter == null) {
             display("No default Bluetooth adapter. Device likely does not support bluetooth.")
             return
         }
 
-        // We use Text-to-Speech to indicate status change to the user
-        initTts()
-
-        registerReceiver(adapterStateChangeReceiver, IntentFilter(
-                BluetoothAdapter.ACTION_STATE_CHANGED))
-        registerReceiver(sinkProfileStateChangeReceiver, IntentFilter(
-                ACTION_CONNECTION_STATE_CHANGED))
-        registerReceiver(sinkProfilePlaybackChangeReceiver, IntentFilter(
-                ACTION_PLAYING_STATE_CHANGED))
-
-        bluetoothAdapter?.let {
-            if (it.isEnabled) {
-                display("Bluetooth Adapter is already enabled.")
-                initA2DPSink()
+        deviceRef.get().addOnCompleteListener { task ->
+            deviceName = if (task.isSuccessful) {
+                val device = task.result.toDevice()
+                slider.progress = device.settings.current_volume
+                device.friendly_name
             } else {
-                display("Bluetooth adapter not enabled. Enabling.")
-                it.enable()
+                Device().friendly_name
+            }
+            registerReceiver(adapterStateChangeReceiver, IntentFilter(
+                    BluetoothAdapter.ACTION_STATE_CHANGED))
+            registerReceiver(sinkProfileStateChangeReceiver, IntentFilter(
+                    ACTION_CONNECTION_STATE_CHANGED))
+            registerReceiver(sinkProfilePlaybackChangeReceiver, IntentFilter(
+                    ACTION_PLAYING_STATE_CHANGED))
+
+            bluetoothAdapter?.let {
+                if (it.isEnabled) {
+                    display("Bluetooth Adapter is already enabled.")
+                    initA2DPSink()
+                } else {
+                    display("Bluetooth adapter not enabled. Enabling.")
+                    it.enable()
+                }
             }
         }
 
-        val device_id = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
-
-        val firestore = FirebaseFirestore.getInstance()
-        val deviceRef = firestore.collection("devices").document(device_id)
         deviceRef.addSnapshotListener { snapshot, e ->
-                    if (e != null) {
-                        display("Failed to fetch data from the Cloud.")
-                        return@addSnapshotListener
-                    }
+            if (e != null) {
+                display("Failed to fetch data from the Cloud.")
+                return@addSnapshotListener
+            }
 
-                    if (snapshot != null && snapshot.exists()) {
-                        val device = snapshot.toObject(Device::class.java)
-                        device?.let {
-                            val settings = it.settings
-                            slider.progress = settings.current_volume
-                        }
-                    }
-                }
+            val device = snapshot.toDevice()
+            val settings = device.settings
+            slider.progress = settings.current_volume
+        }
 
     }
 
@@ -207,7 +222,7 @@ class A2dpSinkActivity : Activity() {
             bluetoothAdapter!!.closeProfileProxy(A2DP_SINK_PROFILE, a2DPSinkProxy)
         }
 
-        ttsEngine?.let {
+        textToSpeech?.let {
             it.stop()
             it.shutdown()
         }
@@ -239,7 +254,7 @@ class A2dpSinkActivity : Activity() {
         }
         setupBTProfiles()
         display("Set up Bluetooth Adapter name and profile")
-        bluetoothAdapter!!.name = ADAPTER_FRIENDLY_NAME
+        bluetoothAdapter!!.name = deviceName
         bluetoothAdapter!!.getProfileProxy(this, object : BluetoothProfile.ServiceListener {
             override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
                 a2DPSinkProxy = proxy
@@ -270,7 +285,6 @@ class A2dpSinkActivity : Activity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_ENABLE_DISCOVERABLE) {
             display("Enable discoverable returned with result $resultCode")
-            Log.d(TAG, "Enable discoverable returned with result $resultCode")
 
             // ResultCode, as described in BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE, is either
             // RESULT_CANCELED or the number of milliseconds that the device will stay in
@@ -284,7 +298,7 @@ class A2dpSinkActivity : Activity() {
                 return
             }
             display("Bluetooth adapter successfully set to discoverable mode. " +
-                    "Any A2DP source can find it with the name $ADAPTER_FRIENDLY_NAME"  +
+                    "Any A2DP source can find it with the name $deviceName"  +
                     " and pair for the next $DISCOVERABLE_TIMEOUT_MS ms. " +
                     "Try looking for it on your phone, for example.")
 
@@ -294,7 +308,7 @@ class A2dpSinkActivity : Activity() {
             // listen to and react appropriately.
 
             speak("Bluetooth audio sink is discoverable for $DISCOVERABLE_TIMEOUT_MS" +
-                    " milliseconds. Look for a device named $ADAPTER_FRIENDLY_NAME")
+                    " milliseconds. Look for a device named $deviceName")
 
         }
     }
@@ -321,23 +335,22 @@ class A2dpSinkActivity : Activity() {
         }
     }
 
-    private fun initTts() {
-        ttsEngine = TextToSpeech(this@A2dpSinkActivity,
+    private fun initializeTextToSpeech() {
+        textToSpeech = TextToSpeech(this@A2dpSinkActivity,
                 TextToSpeech.OnInitListener { status ->
                     if (status == TextToSpeech.SUCCESS) {
-                        ttsEngine!!.language = Locale.US
+                        textToSpeech?.language = Locale.US
                     } else {
                         display("Could not open TTS Engine (onInit status=$status" +
                                 "). Ignoring text to speech")
-                        ttsEngine = null
+                        textToSpeech = null
                     }
                 })
     }
 
-
     private fun speak(utterance: String) {
         display(utterance)
-        ttsEngine?.speak(utterance, TextToSpeech.QUEUE_ADD, null, UTTERANCE_ID)
+        textToSpeech?.speak(utterance, TextToSpeech.QUEUE_ADD, null, UTTERANCE_ID)
     }
 
     private fun display(text: String) {
@@ -354,7 +367,6 @@ class A2dpSinkActivity : Activity() {
     companion object {
         private const val TAG = "A2dpSinkActivity"
 
-        private const val ADAPTER_FRIENDLY_NAME = "Bluetooth Speaks Things"
         private const val DISCOVERABLE_TIMEOUT_MS = 300
         private const val REQUEST_CODE_ENABLE_DISCOVERABLE = 100
         private const val UTTERANCE_ID = "io.github.rosariopfernandes.btspeaksthings.UTTERANCE_ID"
