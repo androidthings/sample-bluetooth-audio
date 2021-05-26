@@ -3,6 +3,10 @@
 This sample demonstrates the use of Android Bluetooth APIs for audio from an
 Android Things app.
 
+> **Note:** The Android Things Console will be turned down for non-commercial
+> use on January 5, 2022. For more details, see the
+> [FAQ page](https://developer.android.com/things/faq).
+
 ## Introduction
 
 This sample demonstrates how to enable an A2DP sink on your Android Things device
